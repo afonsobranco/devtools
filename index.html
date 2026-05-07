@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Primary SEO ── -->
+  <title>CharCode — Unicode & HTML Entity Converter</title>
+  <meta name="description" content="Instantly decode and encode any character. Look up Unicode code points, HTML entities, UTF-8 bytes, CSS escapes, JS escapes, URL encoding, and Win-1252 values. A fast, offline-capable developer tool for Unicode, HTML5 named entities, emoji, and the full BMP.">
+  <meta name="author" content="afonsobranco">
+  <meta name="keywords" content="unicode, html entities, character encoding, utf-8, hex converter, url encoding, unicode lookup, html encode, charcode, developer tool, ascii, emoji">
+  <link rel="canonical" href="https://afonsobranco.github.io/devtools/">
+
+  <!-- ── Open Graph ── -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://afonsobranco.github.io/devtools/">
+  <meta property="og:title"       content="CharCode — Unicode & HTML Entity Converter">
+  <meta property="og:description" content="Instantly decode and encode any character. Look up Unicode, HTML entities, UTF-8 bytes, URL encoding, CSS escapes and more. The developer tool for character encoding.">
+  <meta property="og:image"       content="https://afonsobranco.github.io/devtools/og-image.svg">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name"   content="CharCode">
+  <meta property="og:locale"      content="en_US">
+
+  <!-- ── Twitter Card ── -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="CharCode — Unicode & HTML Entity Converter">
+  <meta name="twitter:description" content="Instantly decode and encode any character. Unicode, HTML entities, UTF-8, URL encoding and more.">
+  <meta name="twitter:image"       content="https://afonsobranco.github.io/devtools/og-image.svg">
+
+  <!-- ── Favicon ── -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="shortcut icon"        href="favicon.svg">
+
+  <!-- ── Fonts ── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+
+  <!-- ── Styles ── -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- ── Theme: apply before paint to avoid flash ── -->
+  <script>
+    (function() {
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    })();
+  </script>
+</head>
+<body>
+  <canvas id="bgc"></canvas>
+
+  <div class="app">
+    <!-- ── Header ── -->
+    <header>
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect width="28" height="28" rx="8" fill="var(--a)" opacity=".12"/>
+          <path d="M6 14L11 6.5L16 14L11 21.5L6 14Z" fill="var(--a)" opacity=".9"/>
+          <path d="M12 14L17 6.5L22 14L17 21.5L12 14Z" fill="var(--a)" opacity=".35"/>
+        </svg>
+        <span class="logo-t">CharCode</span>
+        <span class="logo-v">v4.0</span>
+      </div>
+      <button id="tbtn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <span id="tico" aria-hidden="true">☀️</span>
+        <span id="tlbl">LIGHT</span>
+      </button>
+    </header>
+
+    <!-- ── Main ── -->
+    <main>
+      <!-- Premium title -->
+      <div class="title-sec" id="ts">
+        <div class="char-cloud" id="cloud" aria-hidden="true"></div>
+        <div class="title-lockup" role="heading" aria-level="1">
+          <span class="t-char">Char</span>
+          <span class="t-sep" aria-hidden="true">◆</span>
+          <span class="t-code">Code</span>
+        </div>
+        <div class="t-rule" aria-hidden="true">
+          <div class="t-rl"></div>
+          <div class="t-rd"></div>
+          <div class="t-rl"></div>
+        </div>
+        <p class="t-sub">Unicode &middot; HTML Entities &middot; UTF-8 &middot; Hex &middot; URL Encoding</p>
+      </div>
+
+      <!-- Input -->
+      <div class="iw">
+        <div class="ir">
+          <div class="bwrap" id="bwrap" aria-hidden="true">
+            <span class="tbadge" id="tbadge">CHAR</span>
+          </div>
+          <input
+            id="inp"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            aria-label="Enter a character, HTML entity, Unicode notation, or hex value"
+            placeholder="€  &amp;euro;  &amp;#8364;  U+20AC  bullet  Hello  🚀 …"
+            oninput="onInp(this.value)"
+            onkeydown="onKey(event)">
+          <button id="clrbtn" onclick="clearInp()" aria-label="Clear input">&#215;</button>
+        </div>
+
+        <!-- Example chips -->
+        <div class="chips" role="list" aria-label="Example inputs">
+          <button class="chip" onclick="si('€')" role="listitem">€</button>
+          <button class="chip" onclick="si('&amp;copy;')" role="listitem">&amp;copy;</button>
+          <button class="chip" onclick="si('bullet')" role="listitem">bullet</button>
+          <button class="chip" onclick="si('arrow')" role="listitem">arrow</button>
+          <button class="chip" onclick="si('U+1F680')" role="listitem">U+1F680</button>
+          <button class="chip" onclick="si('0x2665')" role="listitem">0x2665</button>
+          <button class="chip" onclick="si('128')" role="listitem">128</button>
+          <button class="chip" onclick="si('🚀')" role="listitem">🚀</button>
+          <button class="chip" onclick="si('Hello')" role="listitem">Hello</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="res" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- Empty state -->
+      <div id="empty" aria-hidden="true">
+        <div class="empty-icon">&#8709;</div>
+        <p class="empty-lbl">awaiting input</p>
+      </div>
+    </main>
+
+    <footer>
+      <p>Unicode 15.1 &middot; HTML5 Named Entities &middot; Windows-1252 &middot; Full BMP &middot; Emoji</p>
+      <p class="footer-sub">Built by <a href="https://github.com/afonsobranco" target="_blank" rel="noopener">afonsobranco</a></p>
+    </footer>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" role="status" aria-live="polite">
+    <div id="ti">
+      <span aria-hidden="true" style="color:#22c55e">&#10003;</span>
+      <span id="tmsg">Copied!</span>
+    </div>
+  </div>
+
+  <!-- ── App logic ── -->
+  <script src="js/app.js"></script>
+</body>
+</html>
