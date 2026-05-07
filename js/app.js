@@ -383,6 +383,11 @@ function detect(t) {
 //  CONVERSION ENGINE
 // ════════════════════════════════════════════════════════════
 function convert(raw) {
+  // Handle single-character inputs BEFORE trimming — catches space, nbsp (U+00A0),
+  // LRM (U+200E), RLM (U+200F), and other whitespace/invisible chars
+  if ([...raw].length === 1) {
+    return buildResult(raw.codePointAt(0), 'Character');
+  }
   const t = raw.trim();
   if (!t) return null;
   const k = detect(t);
@@ -564,11 +569,28 @@ function render(r) {
 }
 
 // ── Single character view ──
+function isInvisible(cp) {
+  return cp < 32 ||
+         cp === 127 ||
+         (cp >= 128 && cp <= 159) ||   // C1 controls
+         (cp >= 8203 && cp <= 8207) || // zero-width + directional marks (ZWS, ZWNJ, ZWJ, LRM, RLM)
+         cp === 8232 || cp === 8233 ||  // line/paragraph separator
+         cp === 65279;                  // BOM / ZWNBSP
+}
+
+function dispChar(cp, char) {
+  if (isInvisible(cp)) {
+    const label = cp < 32 || cp === 127 ? 'CTRL'
+      : (cp >= 128 && cp <= 159)        ? 'C1'
+      : 'INVIS';
+    return `<span style="font-size:.32em;font-family:'JetBrains Mono',monospace;color:var(--a);letter-spacing:.04em">${label}</span>`;
+  }
+  return esc(char);
+}
+
 function renderSingle(r) {
-  const isCtrl = r.cp < 32 || r.cp === 127;
-  const disp = isCtrl
-    ? `<span style="font-size:.35em;font-family:'JetBrains Mono',monospace;color:var(--a)">CTRL</span>`
-    : esc(r.char);
+  const invisible = isInvisible(r.cp);
+  const disp = dispChar(r.cp, r.char);
 
   const rows = [
     { l:'Decimal',     v: String(r.dec),    raw: String(r.dec),    chip: false },
@@ -582,7 +604,7 @@ function renderSingle(r) {
     { l:'JS Escape',   v: r.jsE,            raw: r.jsE,            chip: false },
     { l:'UTF-8 Bytes', v: r.utf8,           raw: r.utf8.replace(/ /g,''), chip: false },
     { l:'URL Encoded', v: r.url,            raw: r.url,            chip: r.url !== esc(r.char) },
-    { l:'Character',   v: isCtrl ? '(control)' : esc(r.char), raw: r.char, chip: false, skip: isCtrl },
+    { l:'Character',   v: invisible ? '(non-printing)' : esc(r.char), raw: r.char, chip: false, skip: invisible },
   ];
 
   if (r.w1252 && r.w1252 !== r.cp) {
@@ -634,8 +656,7 @@ function renderSingle(r) {
 // ── Search results grid ──
 function renderSearch(r) {
   const cards = r.results.map(item => {
-    const isCtrl = item.cp < 32 || item.cp === 127;
-    const disp  = isCtrl ? `<span style="font-size:.45em;color:var(--a)">CTRL</span>` : esc(item.char);
+    const disp  = dispChar(item.cp, item.char);
     const label = item.ent
       ? `&amp;${esc(item.ent)};`
       : 'U+' + item.cp.toString(16).toUpperCase().padStart(4, '0');
@@ -661,8 +682,7 @@ function renderSearch(r) {
 // ── Multi-character table ──
 function renderMulti(r) {
   const rows = r.items.map((item, i) => {
-    const isCtrl = item.cp < 32 || item.cp === 127;
-    const disp   = isCtrl ? `<span style="font-size:.5em;color:var(--a)">CTRL</span>` : esc(item.char);
+    const disp   = dispChar(item.cp, item.char);
     const ent    = item.htmlName
       ? `<span class="mc-e">${esc(item.htmlName)}</span>`
       : `<span style="color:var(--mu)">—</span>`;
@@ -707,14 +727,15 @@ function onInp(v) {
   document.getElementById('clrbtn').style.opacity = v.length ? '1' : '0';
   const bw = document.getElementById('bwrap');
   const bb = document.getElementById('tbadge');
-  if (v.trim()) {
-    bb.textContent   = KIND_LABELS[detect(v.trim())] || 'INPUT';
+  // Use v.length, not v.trim(), so whitespace chars like space and &nbsp; aren't ignored
+  if (v.length) {
+    bb.textContent   = KIND_LABELS[detect(v)] || 'INPUT';
     bw.style.opacity = '1';
   } else {
     bw.style.opacity = '0';
   }
   dTimer = setTimeout(() => {
-    if (v.trim()) { lastR = convert(v); render(lastR); }
+    if (v.length) { lastR = convert(v); render(lastR); }
     else          { lastR = null; render(null); }
   }, 70);
 }
@@ -724,7 +745,7 @@ function onKey(e) {
   if (e.key === 'Enter') {
     clearTimeout(dTimer);
     const v = document.getElementById('inp').value;
-    if (v.trim()) { lastR = convert(v); render(lastR); }
+    if (v.length) { lastR = convert(v); render(lastR); }
   }
 }
 
