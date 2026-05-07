@@ -314,7 +314,9 @@ const SIDX = [];
 const _seen = new Set();
 
 for (const [cs, desc] of Object.entries(DESC)) {
-  const cp = parseInt(cs);
+  let cp = parseInt(cs);
+  // DESC entries for 128-159 are Win-1252 bytes - remap to actual Unicode code points
+  if (cp >= 128 && cp <= 159 && W12[cp]) cp = W12[cp];
   if (cp >= 0 && cp <= 0x10FFFF && !_seen.has(cp)) {
     SIDX.push({
       cp, desc, ent: C2E[cp] || null,
